@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JARVIS — Personal AI Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;600;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a0f;
+    --panel: #080f18;
+    --border: #0d2a3d;
+    --accent: #00c8ff;
+    --accent2: #00ff88;
+    --accent3: #ff6b35;
+    --text: #c8e6f0;
+    --muted: #4a7a94;
+    --danger: #ff3366;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    flex-shrink: 0;
+  }
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--accent);
+    letter-spacing: 6px;
+    text-shadow: 0 0 20px rgba(0,200,255,0.5);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.6); }
+  }
+  .status-bar {
+    display: flex;
+    gap: 20px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .status-item { display: flex; align-items: center; gap: 6px; }
+  .status-val { color: var(--accent2); font-weight: bold; }
+
+  /* LAYOUT */
+  .main {
+    display: grid;
+    grid-template-columns: 280px 1fr 220px;
+    gap: 0;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* SIDEBAR LEFT */
+  .sidebar-left {
+    border-right: 1px solid var(--border);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    padding: 14px 16px 8px;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+  }
+  .quick-cmds {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .cmd-btn {
+    background: rgba(0,200,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    letter-spacing: 0.5px;
+  }
+  .cmd-btn:hover {
+    background: rgba(0,200,255,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .cmd-icon { font-size: 14px; opacity: 0.7; }
+  .cmd-section {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    padding: 10px 12px 4px;
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+  }
+
+  /* CHAT AREA */
+  .chat-area {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .msg {
+    display: flex;
+    gap: 10px;
+    animation: fadeSlide 0.2s ease;
+  }
+  @keyframes fadeSlide {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .msg.user { flex-direction: row-reverse; }
+  .msg-avatar {
+    width: 30px; height: 30px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    font-weight: 900;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .msg.jarvis .msg-avatar { background: rgba(0,200,255,0.15); color: var(--accent); border: 1px solid rgba(0,200,255,0.3); }
+  .msg.user .msg-avatar { background: rgba(0,255,136,0.12); color: var(--accent2); border: 1px solid rgba(0,255,136,0.25); }
+  .msg-bubble {
+    max-width: 72%;
+    padding: 10px 14px;
+    border-radius: 6px;
+    line-height: 1.55;
+    font-size: 14px;
+    font-weight: 400;
+  }
+  .msg.jarvis .msg-bubble {
+    background: rgba(0,200,255,0.06);
+    border: 1px solid rgba(0,200,255,0.15);
+    color: var(--text);
+  }
+  .msg.user .msg-bubble {
+    background: rgba(0,255,136,0.07);
+    border: 1px solid rgba(0,255,136,0.18);
+    color: #c8f0de;
+  }
+  .msg-result {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--accent2);
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .thinking {
+    display: flex; gap: 5px; align-items: center;
+    padding: 8px 0;
+  }
+  .thinking span {
+    width: 6px; height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: bounce 1.2s infinite;
+    opacity: 0.6;
+  }
+  .thinking span:nth-child(2) { animation-delay: 0.2s; }
+  .thinking span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%,80%,100% { transform: translateY(0); opacity:0.4; }
+    40% { transform: translateY(-6px); opacity:1; }
+  }
+
+  /* INPUT BAR */
+  .input-bar {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .input-field {
+    flex: 1;
+    background: rgba(0,200,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .input-field:focus { border-color: rgba(0,200,255,0.4); }
+  .input-field::placeholder { color: var(--muted); }
+  .send-btn, .mic-btn, .clear-btn {
+    height: 40px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+  .send-btn {
+    background: rgba(0,200,255,0.1);
+    color: var(--accent);
+    padding: 0 18px;
+    border-color: rgba(0,200,255,0.3);
+  }
+  .send-btn:hover { background: rgba(0,200,255,0.2); }
+  .mic-btn {
+    background: rgba(255,107,53,0.08);
+    color: var(--accent3);
+    border-color: rgba(255,107,53,0.25);
+    width: 40px;
+    font-size: 16px;
+  }
+  .mic-btn:hover { background: rgba(255,107,53,0.18); }
+  .mic-btn.listening { border-color: var(--accent3); animation: micPulse 1s infinite; }
+  @keyframes micPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(255,107,53,0.3); }
+    50% { box-shadow: 0 0 0 6px rgba(255,107,53,0); }
+  }
+  .clear-btn {
+    background: rgba(255,51,102,0.06);
+    color: var(--danger);
+    border-color: rgba(255,51,102,0.2);
+    padding: 0 12px;
+    font-size: 10px;
+  }
+  .clear-btn:hover { background: rgba(255,51,102,0.14); }
+
+  /* SIDEBAR RIGHT */
+  .sidebar-right {
+    border-left: 1px solid var(--border);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sys-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    padding: 14px 16px 8px;
+    border-bottom: 1px solid var(--border);
+    text-transform: uppercase;
+  }
+  .sys-content { padding: 14px 14px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  .gauge-label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .gauge-label span { color: var(--accent2); }
+  .gauge-track {
+    height: 5px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .gauge-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s ease;
+  }
+  .gauge-fill.cpu { background: var(--accent); }
+  .gauge-fill.ram { background: var(--accent2); }
+  .gauge-fill.disk { background: var(--accent3); }
+
+  .sys-stat {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    line-height: 1.9;
+  }
+  .sys-stat .val { color: var(--text); float: right; }
+  .sys-stat .key { color: var(--muted); }
+
+  .jarvis-eye {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    border: 2px solid rgba(0,200,255,0.3);
+    margin: 10px auto;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .jarvis-eye::before {
+    content: '';
+    position: absolute;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    border: 2px solid rgba(0,200,255,0.1);
+    animation: orbit 3s linear infinite;
+  }
+  @keyframes orbit {
+    from { transform: rotate(0deg) scale(1.1); }
+    to { transform: rotate(360deg) scale(1.1); }
+  }
+  .eye-inner {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,200,255,0.9) 0%, rgba(0,100,200,0.4) 70%, transparent 100%);
+    animation: eyeGlow 2s ease-in-out infinite;
+  }
+  @keyframes eyeGlow {
+    0%,100% { opacity: 0.7; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.15); }
+  }
+  .api-warning {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--accent3);
+    background: rgba(255,107,53,0.07);
+    border: 1px solid rgba(255,107,53,0.2);
+    border-radius: 4px;
+    padding: 8px 10px;
+    text-align: center;
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    JARVIS
+  </div>
+  <div class="status-bar">
+    <div class="status-item">CPU <span class="status-val" id="h-cpu">--</span>%</div>
+    <div class="status-item">RAM <span class="status-val" id="h-ram">--</span>%</div>
+    <div class="status-item" id="conn-status" style="color: var(--accent2);">◉ ONLINE</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- LEFT SIDEBAR: Quick Commands -->
+  <div class="sidebar-left">
+    <div class="sidebar-title">◈ Quick Commands</div>
+    <div class="quick-cmds">
+      <div class="cmd-section">System</div>
+      <button class="cmd-btn" onclick="sendQuick('Show my system info: CPU, RAM and disk usage')"><span class="cmd-icon">⬡</span>System Info</button>
+      <button class="cmd-btn" onclick="sendQuick('List all running processes sorted by CPU usage')"><span class="cmd-icon">⬡</span>Running Processes</button>
+      <button class="cmd-btn" onclick="sendQuick('Show disk usage of all mounted drives')"><span class="cmd-icon">⬡</span>Disk Usage</button>
+      <button class="cmd-btn" onclick="sendQuick('Show my network interfaces and IP addresses')"><span class="cmd-icon">⬡</span>Network Info</button>
+      <button class="cmd-btn" onclick="sendQuick('Show system uptime and load average')"><span class="cmd-icon">⬡</span>Uptime</button>
+
+      <div class="cmd-section">Apps</div>
+      <button class="cmd-btn" onclick="sendQuick('Open Firefox browser')"><span class="cmd-icon">▶</span>Firefox</button>
+      <button class="cmd-btn" onclick="sendQuick('Open the Files file manager app')"><span class="cmd-icon">▶</span>File Manager</button>
+      <button class="cmd-btn" onclick="sendQuick('Open a terminal')"><span class="cmd-icon">▶</span>Terminal</button>
+      <button class="cmd-btn" onclick="sendQuick('Open VS Code editor')"><span class="cmd-icon">▶</span>VS Code</button>
+      <button class="cmd-btn" onclick="sendQuick('Open Android Studio')"><span class="cmd-icon">▶</span>Android Studio</button>
+
+      <div class="cmd-section">Dev</div>
+      <button class="cmd-btn" onclick="sendQuick('Show my current directory and list files')"><span class="cmd-icon">◈</span>Current Dir</button>
+      <button class="cmd-btn" onclick="sendQuick('Check if git is installed and show git version')"><span class="cmd-icon">◈</span>Git Status</button>
+      <button class="cmd-btn" onclick="sendQuick('Show Python and pip versions installed')"><span class="cmd-icon">◈</span>Python Info</button>
+      <button class="cmd-btn" onclick="sendQuick('Show all installed packages with dnf list installed')"><span class="cmd-icon">◈</span>Installed Packages</button>
+
+      <div class="cmd-section">Web</div>
+      <button class="cmd-btn" onclick="sendQuick('Search the web for latest Kotlin updates')"><span class="cmd-icon">↗</span>Search Kotlin</button>
+      <button class="cmd-btn" onclick="sendQuick('Open YouTube in Firefox')"><span class="cmd-icon">↗</span>YouTube</button>
+      <button class="cmd-btn" onclick="sendQuick('Open GitHub in Firefox')"><span class="cmd-icon">↗</span>GitHub</button>
+    </div>
+  </div>
+
+  <!-- CENTER: Chat -->
+  <div class="chat-area">
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg jarvis">
+        <div class="msg-avatar">J.A.R</div>
+        <div class="msg-bubble">
+          Good day, sir. I am JARVIS — Just A Rather Very Intelligent System.<br><br>
+          I have full access to your Fedora laptop. I can run commands, open applications, check your system status, search the web, and answer any question you have.<br><br>
+          What can I do for you today?
+        </div>
+      </div>
+    </div>
+
+    <div class="input-bar">
+      <button class="mic-btn" id="mic-btn" onclick="toggleMic()" title="Voice Input">🎤</button>
+      <input class="input-field" id="msg-input" type="text" placeholder="Ask JARVIS anything... or give a command" autocomplete="off"
+        onkeydown="if(event.key==='Enter') sendMessage()">
+      <button class="send-btn" onclick="sendMessage()">SEND</button>
+      <button class="clear-btn" onclick="clearChat()">CLEAR</button>
+    </div>
+  </div>
+
+  <!-- RIGHT SIDEBAR: System Monitor -->
+  <div class="sidebar-right">
+    <div class="sys-title">◈ System Monitor</div>
+    <div class="sys-content">
+
+      <div class="jarvis-eye">
+        <div class="eye-inner"></div>
+      </div>
+
+      <div>
+        <div class="gauge-label">CPU <span id="cpu-val">--%</span></div>
+        <div class="gauge-track"><div class="gauge-fill cpu" id="cpu-bar" style="width:0%"></div></div>
+      </div>
+      <div>
+        <div class="gauge-label">RAM <span id="ram-val">--%</span></div>
+        <div class="gauge-track"><div class="gauge-fill ram" id="ram-bar" style="width:0%"></div></div>
+      </div>
+      <div>
+        <div class="gauge-label">DISK <span id="disk-val">--%</span></div>
+        <div class="gauge-track"><div class="gauge-fill disk" id="disk-bar" style="width:0%"></div></div>
+      </div>
+
+      <div class="sys-stat">
+        <div><span class="key">RAM USED</span> <span class="val" id="ram-used">-- MB</span></div>
+        <div><span class="key">RAM TOTAL</span> <span class="val" id="ram-total">-- MB</span></div>
+        <div><span class="key">DISK USED</span> <span class="val" id="disk-used">-- GB</span></div>
+        <div><span class="key">DISK TOTAL</span> <span class="val" id="disk-total">-- GB</span></div>
+      </div>
+
+      <div class="api-warning" id="api-status">Connecting to JARVIS backend...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const BACKEND = 'http://localhost:5000';
+let isListening = false;
+let recognition = null;
+
+// ─── System Monitor Polling ─────────────────────────────────────────────────
+async function updateSystemStats() {
+  try {
+    const r = await fetch(BACKEND + '/system');
+    if (!r.ok) throw new Error();
+    const d = await r.json();
+
+    document.getElementById('cpu-val').textContent = d.cpu + '%';
+    document.getElementById('cpu-bar').style.width = d.cpu + '%';
+    document.getElementById('ram-val').textContent = d.ram_percent + '%';
+    document.getElementById('ram-bar').style.width = d.ram_percent + '%';
+    document.getElementById('ram-used').textContent = d.ram_used + ' MB';
+    document.getElementById('ram-total').textContent = d.ram_total + ' MB';
+
+    const diskPct = Math.round((d.disk_used / d.disk_total) * 100);
+    document.getElementById('disk-val').textContent = diskPct + '%';
+    document.getElementById('disk-bar').style.width = diskPct + '%';
+    document.getElementById('disk-used').textContent = d.disk_used + ' GB';
+    document.getElementById('disk-total').textContent = d.disk_total + ' GB';
+
+    document.getElementById('h-cpu').textContent = d.cpu;
+    document.getElementById('h-ram').textContent = d.ram_percent;
+    document.getElementById('api-status').textContent = '◉ JARVIS BACKEND ONLINE';
+    document.getElementById('api-status').style.color = '#00ff88';
+    document.getElementById('conn-status').textContent = '◉ ONLINE';
+    document.getElementById('conn-status').style.color = '#00ff88';
+  } catch {
+    document.getElementById('api-status').textContent = '⚠ Backend offline — run jarvis.py';
+    document.getElementById('api-status').style.color = '#ff6b35';
+    document.getElementById('conn-status').textContent = '◌ OFFLINE';
+    document.getElementById('conn-status').style.color = '#ff6b35';
+  }
+}
+updateSystemStats();
+setInterval(updateSystemStats, 3000);
+
+// ─── Chat ────────────────────────────────────────────────────────────────────
+function addMessage(role, text, resultText) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+
+  const avEl = document.createElement('div');
+  avEl.className = 'msg-avatar';
+  avEl.textContent = role === 'jarvis' ? 'J.A.R' : 'YOU';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.textContent = text;
+
+  if (resultText) {
+    const res = document.createElement('div');
+    res.className = 'msg-result';
+    res.textContent = '» ' + resultText;
+    bubble.appendChild(res);
+  }
+
+  div.appendChild(avEl);
+  div.appendChild(bubble);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showThinking() {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg jarvis';
+  div.id = 'thinking-msg';
+
+  const av = document.createElement('div');
+  av.className = 'msg-avatar';
+  av.textContent = 'J.A.R';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = '<div class="thinking"><span></span><span></span><span></span></div>';
+
+  div.appendChild(av);
+  div.appendChild(bubble);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeThinking() {
+  const el = document.getElementById('thinking-msg');
+  if (el) el.remove();
+}
+
+async function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  addMessage('user', text);
+  showThinking();
+
+  try {
+    const r = await fetch(BACKEND + '/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+    const d = await r.json();
+    removeThinking();
+    addMessage('jarvis', d.response, d.action_result);
+  } catch (e) {
+    removeThinking();
+    addMessage('jarvis', '⚠ Cannot reach JARVIS backend. Make sure jarvis.py is running on port 5000.', null);
+  }
+}
+
+function sendQuick(msg) {
+  document.getElementById('msg-input').value = msg;
+  sendMessage();
+}
+
+async function clearChat() {
+  document.getElementById('chat-messages').innerHTML = '';
+  try { await fetch(BACKEND + '/clear', { method: 'POST' }); } catch {}
+  addMessage('jarvis', 'Memory cleared. Ready for new session, sir.', null);
+}
+
+// ─── Voice Input ─────────────────────────────────────────────────────────────
+function toggleMic() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('Speech recognition not supported in this browser. Use Chrome or Chromium.');
+    return;
+  }
+
+  if (isListening) {
+    recognition.stop();
+    return;
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = false;
+
+  recognition.onstart = () => {
+    isListening = true;
+    document.getElementById('mic-btn').classList.add('listening');
+    document.getElementById('mic-btn').textContent = '🔴';
+  };
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    document.getElementById('msg-input').value = transcript;
+    sendMessage();
+  };
+  recognition.onend = () => {
+    isListening = false;
+    document.getElementById('mic-btn').classList.remove('listening');
+    document.getElementById('mic-btn').textContent = '🎤';
+  };
+  recognition.onerror = (e) => {
+    isListening = false;
+    document.getElementById('mic-btn').classList.remove('listening');
+    document.getElementById('mic-btn').textContent = '🎤';
+    console.error('Voice error:', e.error);
+  };
+
+  recognition.start();
+}
+</script>
+</body>
+</html>
